@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (c) YugaByte, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -9,14 +11,20 @@
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
+#
+
+import os
+
+from tests.base import TestCase
+
+from yugabyte_pycommon import mkdir_p
+from random import randint
 
 
-from yugabyte_pycommon.version import __version__  # NOQA
-
-# Please keep this Python 2 and 3 compatible.
-# http://python-future.org/compatible_idioms.html
-
-from yugabyte_pycommon.external_calls import *
-from yugabyte_pycommon.logging_util import *
-from yugabyte_pycommon.text_manipulation import *
-from yugabyte_pycommon.fs_util import *
+class ExternalCommandsTestCase(TestCase):
+    def test_mkdir_p(self):
+        tmp_dir_path = '/tmp/yugabyte_mkdir_p_test_%d' % randint(1, 1000000000)
+        for _ in range(2):
+            mkdir_p(tmp_dir_path)
+            self.assertTrue(os.path.isdir(tmp_dir_path))
+        os.rmdir(tmp_dir_path)

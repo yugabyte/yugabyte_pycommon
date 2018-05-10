@@ -10,13 +10,11 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
 
-from yugabyte_pycommon.version import __version__  # NOQA
 
-# Please keep this Python 2 and 3 compatible.
-# http://python-future.org/compatible_idioms.html
+from yugabyte_pycommon.text_manipulation import get_bool_env_var
 
-from yugabyte_pycommon.external_calls import *
-from yugabyte_pycommon.logging_util import *
-from yugabyte_pycommon.text_manipulation import *
-from yugabyte_pycommon.fs_util import *
+
+def is_verbose_mode():
+    return get_bool_env_var('YB_VERBOSE')
