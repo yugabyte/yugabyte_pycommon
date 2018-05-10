@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# This file is part of yugabyte_pycommon.
+# Copyright (c) YugaByte, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied.  See the License for the specific language governing permissions and limitations
+# under the License.
+#
+
+# This file is part of yugabyte_pycommon, used in build scripts for YugaByte Database.
 # https://github.com/yugabyte/yugabyte_pycommon
 
-# Licensed under the Apache 2.0 license:
-# http://www.opensource.org/licenses/Apache 2.0-license
-#  Copyright (c) YugaByte, Inc.
+# We will appreciate your GitHub stars at https://github.com/yugabyte/yugabyte-db!
 
 from yugabyte_pycommon.version import __version__  # NOQA
 
@@ -14,7 +25,12 @@ from yugabyte_pycommon.version import __version__  # NOQA
 # http://python-future.org/compatible_idioms.html
 
 import os
-import  itertools
+import itertools
+import subprocess
+import logging
+import re
+
+from collections import namedtuple
 
 
 def get_bool_env_var(env_var_name):
@@ -125,4 +141,155 @@ def make_set(obj):
     if isinstance(obj, set):
         return obj
     return set(make_list(obj))
+
+
+# ------------------------------------------------------------------------------------------------
+# Filesystem utilities
+# ------------------------------------------------------------------------------------------------
+
+
+def mkdir_p(d):
+    """
+    Similar to the "mkdir -p ..." shell command. Creates the given directory and all enclosing
+    directories. No-op if the directory already exists.
+
+    """
+
+    if os.path.isdir(d):
+        return
+    try:
+        os.makedirs(d)
+    except OSError:
+        if os.path.isdir(d):
+            return
+        raise
+
+
+def decode_utf8(bytes):
+    if isinstance(bytes, str):
+        return bytes
+    return bytes.decode('utf-8')
+
+
+# ------------------------------------------------------------------------------------------------
+# Utilities for running external commands
+# ------------------------------------------------------------------------------------------------
+
+class ProgramResult:
+    """
+    This represents the result of executing an external program.
+    """
+    def __init__(self, cmd_line, returncode, stdout, stderr, error_msg, program_path):
+        self.cmd_line = cmd_line
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        self.error_msg = error_msg
+        self.program_path = program_path
+
+
+class ExternalProgramError(Exception):
+    def __init__(self, message, result):
+        self.message = message
+        self.result = result
+
+
+def trim_long_text(text, max_lines):
+    """
+    Trim a potentially long multi-line message at the given number of lines.
+    :param text: the input text
+    :param max_lines: maximum number of lines
+    :return: the trimmed message
+    """
+    max_lines = max(max_lines, 3)
+
+    lines = text.splitlines()
+    if len(lines) <= max_lines:
+        return text
+
+    # Here is the math involved:
+    # lines_at_each_end * 2 + 1 <= max_lines
+    # lines_at_each_end <= (max_lines - 1) / 2
+    lines_to_keep_at_each_end = int((max_lines - 1) / 2)
+
+    num_lines_skipped = len(lines) - lines_to_keep_at_each_end * 2
+    if num_lines_skipped <= 0:
+        return text
+
+    return "\n".join(
+        lines[:lines_to_keep_at_each_end] +
+        ['({} lines skipped)'.format(num_lines_skipped)] +
+        lines[-lines_to_keep_at_each_end:]
+    )
+
+
+def quote_for_bash(s):
+    if s == '':
+        return "''"
+    if re.search(r"""['"${}()\\]""", s):
+        return "'" + s.replace("'", r"'\''") + "'"
+    return s
+
+
+def cmd_line_args_to_str(args):
+    """
+    Converts a list of command-line arguments, including an executable program in the beginning,
+    to a single command-line string suitable for pasing into Bash.
+
+    :param args: an array with a program path and command-line arguments
+    :return: a string suitable for pasing into Bash
+    """
+    return ' '.join([quote_for_bash(arg) for arg in args])
+
+
+def run_program(args, error_ok=False, max_error_lines=10000, **kwargs):
+    """
+    Run the given program identified by its argument list, and return a ProgramResult object.
+    :param error_ok: False to raise an exception on errors, True not to raise it.
+    """
+    if not isinstance(args, list):
+        args = [args]
+
+    def normalize_arg(arg):
+        if isinstance(arg, int):
+            return str(arg)
+        return arg
+    args = [normalize_arg(arg) for arg in args]
+
+    try:
+        program_subprocess = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            **kwargs)
+
+    except OSError:
+        logging.error("Failed to run program {}".format(args))
+        raise
+
+    program_stdout, program_stderr = program_subprocess.communicate()
+    error_msg = None
+
+    def cleanup_output(out_str):
+        return decode_utf8(out_str.strip())
+    clean_stdout = cleanup_output(program_stdout)
+    clean_stderr = cleanup_output(program_stderr)
+
+    result = ProgramResult(
+        cmd_line=args,
+        program_path=os.path.realpath(args[0]),
+        returncode=program_subprocess.returncode,
+        stdout=clean_stdout,
+        stderr=clean_stderr,
+        error_msg=error_msg)
+
+    if program_subprocess.returncode != 0:
+        error_msg = "Non-zero exit code {} from: {} ; stdout: '{}' stderr: '{}'".format(
+                program_subprocess.returncode, cmd_line_args_to_str(args),
+                trim_long_text(clean_stdout, max_error_lines),
+                trim_long_text(clean_stderr, max_error_lines))
+        if not error_ok:
+            raise ExternalProgramError(error_msg, result)
+
+    return result
 

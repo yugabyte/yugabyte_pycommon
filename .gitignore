@@ -58,3 +58,10 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+.idea/
+
+*.sw?
+
+.session.vim
+.session.vim.*

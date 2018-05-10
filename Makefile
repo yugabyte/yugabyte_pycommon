@@ -19,8 +19,9 @@ setup:
 test: unit
 
 unit:
-	@coverage run --branch `which nosetests` -vv --with-yanc -s tests/
-	@coverage report -m --fail-under=80
+	@coverage run --branch `which nosetests` -vv -s tests/ -s yugabyte_pycommon/ --with-doctest
+	# TODO: increase the coverage threshold here when appropriate.
+	@coverage report -m --fail-under=10
 
 # show coverage in html format
 coverage-html: unit
@@ -28,6 +29,7 @@ coverage-html: unit
 
 # run tests against all supported python versions
 tox:
+	pip install --user tox
 	@tox
 
 #docs:

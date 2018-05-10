@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+package_dir=$( cd "$( dirname "$BASH_SOURCE" )" && pwd )
+for python_file in $( find "$package_dir"/yugabyte_pycommon -name "*.py" ); do
+  for interpreter in python2 python3; do
+    ( set -x; "$interpreter" -m doctest "$python_file" )
+  done
+done
