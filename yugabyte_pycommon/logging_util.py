@@ -18,3 +18,18 @@ from yugabyte_pycommon.text_manipulation import get_bool_env_var
 
 def is_verbose_mode():
     return get_bool_env_var('YB_VERBOSE')
+
+
+def get_default_log_level():
+    if is_verbose_mode():
+        return logging.DEBUG
+    return logging.INFO
+
+
+def init_logging(log_level=None):
+    if log_level is None:
+        log_level = get_default_log_level()
+    logging.basicConfig(
+        level=log_level,
+        format="[%(filename)s:%(lineno)d] %(asctime)s %(levelname)s: %(message)s"
+    )

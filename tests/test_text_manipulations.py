@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # Copyright (c) YugaByte, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,14 +11,9 @@
 # under the License.
 #
 
-# This file is part of yugabyte_pycommon, used in build scripts for YugaByte Database.
-# https://github.com/yugabyte/yugabyte_pycommon
-
-# We will appreciate your GitHub stars at https://github.com/yugabyte/yugabyte-db!
-
 from yugabyte_pycommon import trim_long_text
 
-from tests.base import TestCase
+from .base import TestCase
 
 
 class TextManipulationsTestCase(TestCase):

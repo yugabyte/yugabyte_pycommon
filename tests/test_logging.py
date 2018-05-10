@@ -9,5 +9,16 @@
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
+#
 
-__version__ = '1.3.0'  # NOQA
+import logging
+
+from .base import TestCase
+
+from yugabyte_pycommon import init_logging
+
+
+class FileSystemUtilTestCase(TestCase):
+    def test_mkdir_p(self):
+        for log_level in [logging.INFO, logging.WARN, logging.DEBUG, logging.ERROR, logging.FATAL]:
+            init_logging(log_level=log_level)
