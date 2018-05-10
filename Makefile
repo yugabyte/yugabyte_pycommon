@@ -32,5 +32,10 @@ tox:
 	pip install --user tox
 	@tox
 
+release: tox
+	rm -f dist/*
+	python setup.py sdist
+	twine upload dist/yugabyte_pycommon*.tar.gz
+
 #docs:
 	#@cd yugabyte_pycommon/docs && make html && open _build/html/index.html
