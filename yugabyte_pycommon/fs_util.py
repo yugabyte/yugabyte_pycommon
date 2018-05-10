@@ -10,13 +10,21 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
+import os
 
-from yugabyte_pycommon.version import __version__  # NOQA
 
-# Please keep this Python 2 and 3 compatible.
-# http://python-future.org/compatible_idioms.html
+def mkdir_p(d):
+    """
+    Similar to the "mkdir -p ..." shell command. Creates the given directory and all enclosing
+    directories. No-op if the directory already exists.
+    """
 
-from yugabyte_pycommon.external_calls import *
-from yugabyte_pycommon.logging_util import *
-from yugabyte_pycommon.text_manipulation import *
-from yugabyte_pycommon.fs_util import *
+    if os.path.isdir(d):
+        return
+    try:
+        os.makedirs(d)
+    except OSError:
+        if os.path.isdir(d):
+            return
+        raise
+

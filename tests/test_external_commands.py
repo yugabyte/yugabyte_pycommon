@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Copyright (c) YugaByte, Inc.
 #
@@ -13,13 +12,6 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 #
-
-# This file is part of yugabyte_pycommon, used in build scripts for YugaByte Database.
-# https://github.com/yugabyte/yugabyte_pycommon
-
-# We will appreciate your GitHub stars at https://github.com/yugabyte/yugabyte-db!
-
-from yugabyte_pycommon import trim_long_text
 
 from tests.base import TestCase
 
