@@ -26,10 +26,13 @@ tests_require = [
 setup(
     name='yugabyte_pycommon',
     version=__version__,
-    description='Common utilities used in YugaByte Database\'s build infrastructure but could also be useful for anyone. E.g. convenient utilities for running external programs, logging, etc.',
-    long_description='''
-Common utilities used in YugaByte Database's build infrastructure but could also be useful for anyone. E.g. convenient utilities for running external programs, logging, etc.
-''',
+    description='Common utilities used in YugaByte Database\'s build infrastructure but could '
+                'also be useful for anyone. E.g. convenient utilities for running external '
+                'programs, logging, etc. Please give YugaByte DB a star at '
+                'https://github.com/yugabyte/yugabyte-db -- much appreciated!',
+    long_description=
+        'Common utilities used in YugaByte Database's build infrastructure but could also be '
+        'useful for anyone. E.g. convenient utilities for running external programs, logging, etc.',
     keywords='tool tools utility utilities yugabyte run command external process group_by',
     author='Mikhail Bautin',
     author_email='mbautin@users.noreply.github.com',
