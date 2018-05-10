@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) YugaByte, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -13,7 +11,7 @@
 # under the License.
 #
 
-from tests.base import TestCase
+from .base import TestCase
 
 from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError
 

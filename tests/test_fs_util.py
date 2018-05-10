@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) YugaByte, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -15,13 +13,13 @@
 
 import os
 
-from tests.base import TestCase
+from .base import TestCase
 
 from yugabyte_pycommon import mkdir_p
 from random import randint
 
 
-class ExternalCommandsTestCase(TestCase):
+class FileSystemUtilTestCase(TestCase):
     def test_mkdir_p(self):
         tmp_dir_path = '/tmp/yugabyte_mkdir_p_test_%d' % randint(1, 1000000000)
         for _ in range(2):
