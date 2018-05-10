@@ -6,6 +6,6 @@
 
 # Licensed under the Apache 2.0 license:
 # http://www.opensource.org/licenses/Apache 2.0-license
-# Copyright (c) 2018, Mikhail Bautin <mbautin@users.noreply.github.com>
+#  Copyright (c) YugaByte, Inc.
 
 __version__ = '1.0.0'  # NOQA
