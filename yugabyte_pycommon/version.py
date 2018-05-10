@@ -8,4 +8,4 @@
 # http://www.opensource.org/licenses/Apache 2.0-license
 #  Copyright (c) YugaByte, Inc.
 
-__version__ = '1.1.0'  # NOQA
+__version__ = '1.1.1'  # NOQA
