@@ -13,7 +13,9 @@
 
 from .base import TestCase
 
-from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError
+import os
+
+from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError, WorkDirContext
 
 
 class ExternalCommandsTestCase(TestCase):
@@ -51,3 +53,11 @@ class ExternalCommandsTestCase(TestCase):
     def test_error_reporing(self):
         with self.assertRaises(ExternalProgramError):
             run_program('false')
+
+    def test_work_dir_context(self):
+        old_work_dir = os.getcwd()
+        for d in ['/tmp', os.path.expanduser('~')]:
+            with WorkDirContext(d):
+                self.assertEquals(d, run_program('pwd').stdout)
+                # The current directory should not actually change.
+                self.assertEquals(old_work_dir, os.getcwd())

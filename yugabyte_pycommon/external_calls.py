@@ -32,6 +32,9 @@ class ProgramResult:
         self.error_msg = error_msg
         self.program_path = program_path
 
+    def success(self):
+        return self.returncode != 0
+
 
 class ExternalProgramError(Exception):
     def __init__(self, message, result):
@@ -39,41 +42,79 @@ class ExternalProgramError(Exception):
         self.result = result
 
 
-def run_program(args, error_ok=False, max_error_lines=10000, **kwargs):
+work_dir_context_stack = []
+
+
+class WorkDirContext:
+    """
+    Allows setting a context for running external programs. Does not actually change the working
+    directory.
+
+    Example:
+
+    with WorkDirContext('/tmp'):
+        run_program('ls')
+    """
+    def __init__(self, work_dir):
+        self.work_dir = work_dir
+
+    def __enter__(self):
+        work_dir_context_stack.append(self)
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        assert self is work_dir_context_stack[-1]
+        work_dir_context_stack.pop()
+
+
+def run_program(args, error_ok=False, max_error_lines=10000, cwd=None, shell=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
     """
-    if not isinstance(args, list):
+    if isinstance(args, tuple):
+        args = list(args)
+
+    if isinstance(args, str):
         args = [args]
+        if shell is None:
+            shell = True
+
+    if cwd is None and work_dir_context_stack:
+        cwd = work_dir_context_stack[-1].work_dir
 
     def normalize_arg(arg):
         if isinstance(arg, int):
             return str(arg)
         return arg
+
     args = [normalize_arg(arg) for arg in args]
 
     cmd_line_str = cmd_line_args_to_str(args)
+    invocation_details_str = "external program in directory %s: %s" % (
+        cwd or os.getcwd(), cmd_line_str)
+
     if is_verbose_mode():
-        current_dir = kwargs.get('cwd', os.getcwd())
-        logging.info("Running external program in directory %s: %s", current_dir, cmd_line_str)
+        logging.info("Running %s", invocation_details_str)
 
     try:
         program_subprocess = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            shell=shell,
+            cwd=cwd,
             **kwargs)
 
     except OSError:
-        logging.error("Failed to run program {}".format(args))
+        logging.error("Failed to run %s", invocation_details_str)
         raise
 
     program_stdout, program_stderr = program_subprocess.communicate()
     error_msg = None
 
     def cleanup_output(out_str):
-        return decode_utf8(out_str.strip())
+        return decode_utf8(out_str.rstrip())
+
     clean_stdout = cleanup_output(program_stdout)
     clean_stderr = cleanup_output(program_stderr)
 
