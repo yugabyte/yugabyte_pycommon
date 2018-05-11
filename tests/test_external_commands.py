@@ -60,9 +60,10 @@ class ExternalCommandsTestCase(TestCase):
         old_work_dir = os.getcwd()
         for d in ['/tmp', os.path.expanduser('~')]:
             with WorkDirContext(d):
+                self.assertEquals(d, os.getcwd())
                 self.assertEquals(d, run_program('pwd').stdout)
-                # The current directory should not actually change.
-                self.assertEquals(old_work_dir, os.getcwd())
+
+        self.assertEquals(old_work_dir, os.getcwd())
 
     def _capture_error_log_from_cmd(self, cmd):
         with LogCapture(level=logging.ERROR) as captured_logs:

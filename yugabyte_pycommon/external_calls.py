@@ -15,6 +15,7 @@
 import os
 import logging
 import subprocess
+import threading
 
 from yugabyte_pycommon.text_manipulation import cmd_line_args_to_str, decode_utf8, trim_long_text
 from yugabyte_pycommon.logging_util import is_verbose_mode
@@ -42,13 +43,9 @@ class ExternalProgramError(Exception):
         self.result = result
 
 
-work_dir_context_stack = []
-
-
 class WorkDirContext:
     """
-    Allows setting a context for running external programs. Does not actually change the working
-    directory.
+    Allows setting a context for running external programs.
 
     Example:
 
@@ -56,14 +53,15 @@ class WorkDirContext:
         run_program('ls')
     """
     def __init__(self, work_dir):
+        self.thread_local = threading.local()
         self.work_dir = work_dir
 
     def __enter__(self):
-        work_dir_context_stack.append(self)
+        self.thread_local.old_dir = os.getcwd()
+        os.chdir(self.work_dir)
 
     def __exit__(self, exception_type, exception_value, traceback):
-        assert self is work_dir_context_stack[-1]
-        work_dir_context_stack.pop()
+        os.chdir(self.thread_local.old_dir)
 
 
 def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
@@ -80,9 +78,6 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
         args = [args]
         if shell is None:
             shell = True
-
-    if cwd is None and work_dir_context_stack:
-        cwd = work_dir_context_stack[-1].work_dir
 
     def normalize_arg(arg):
         if isinstance(arg, int):
