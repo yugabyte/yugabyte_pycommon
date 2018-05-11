@@ -72,6 +72,7 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
     """
+    ("Hello world!")
     if isinstance(args, tuple):
         args = list(args)
 
@@ -91,8 +92,8 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
     args = [normalize_arg(arg) for arg in args]
 
     cmd_line_str = cmd_line_args_to_str(args)
-    invocation_details_str = "external program in directory %s: %s" % (
-        cwd or os.getcwd(), cmd_line_str)
+    invocation_details_str = "external program {{ %s }} running in '%s'" % (
+            cmd_line_str, cwd or os.getcwd())
 
     if is_verbose_mode():
         logging.info("Running %s", invocation_details_str)
@@ -127,11 +128,24 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
         stderr=clean_stderr,
         error_msg=error_msg)
 
+    logging.info("report_errors=%s", report_errors)
     if program_subprocess.returncode != 0:
-        error_msg = "Non-zero exit code {} from: {} ; stdout: '{}' stderr: '{}'".format(
-                program_subprocess.returncode, cmd_line_str,
-                trim_long_text(clean_stdout, max_error_lines),
-                trim_long_text(clean_stderr, max_error_lines))
+        error_msg = "Non-zero exit code {} from {}.".format(
+                program_subprocess.returncode,
+                invocation_details_str,
+                program_subprocess.returncode, cmd_line_str)
+
+        def wrap_for_error_msg(output_or_error, value):
+            if not value.strip():
+                return ""
+            return "\nStandard {} from {}:\n{}\n(end of standard {})\n".format(
+                output_or_error, invocation_details_str, trim_long_text(value, max_error_lines),
+                output_or_error)
+
+        error_msg += wrap_for_error_msg("output", clean_stdout)
+        error_msg += wrap_for_error_msg("error", clean_stderr)
+        error_msg = error_msg.rstrip()
+
         if report_errors is None:
             report_errors = not error_ok
         if report_errors:

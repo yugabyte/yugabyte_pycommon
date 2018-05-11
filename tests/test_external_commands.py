@@ -15,8 +15,10 @@ from .base import TestCase
 
 import os
 
-from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError, WorkDirContext
-
+from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError, WorkDirContext, \
+    init_logging
+import logging
+from testfixtures import LogCapture
 
 class ExternalCommandsTestCase(TestCase):
     def test_run_program_noerror(self):
@@ -61,3 +63,27 @@ class ExternalCommandsTestCase(TestCase):
                 self.assertEquals(d, run_program('pwd').stdout)
                 # The current directory should not actually change.
                 self.assertEquals(old_work_dir, os.getcwd())
+
+    def _capture_error_log_from_cmd(self, cmd):
+        with LogCapture(level=logging.ERROR) as captured_logs:
+            run_program(cmd, error_ok=True, report_errors=True)
+        return str(captured_logs).strip()
+
+    def test_log_error(self):
+        self.assertRegexpMatches(
+            self._capture_error_log_from_cmd("echo Output!; exit 1"), r"""
+Non-zero exit code 1 from external program {{ echo Output!; exit 1 }} running in '.*'.
+Standard output from external program {{ echo Output!; exit 1 }} running in '.*':
+Output!
+\(end of standard output\)""".strip())
+
+        self.assertRegexpMatches(
+            self._capture_error_log_from_cmd("echo Output!; echo Error! >&2; exit 1"), r"""
+Non-zero exit code 1 from external program {{ echo Output!; echo Error! >&2; exit 1 }} running in '.*'.
+Standard output from external program {{ echo Output!; echo Error! >&2; exit 1 }} running in '.*':
+Output!
+\(end of standard output\)
+.*
+Standard error from external program {{ echo Output!; echo Error! >&2; exit 1 }} running in '.*':
+Error!
+\(end of standard error\)""".strip())
