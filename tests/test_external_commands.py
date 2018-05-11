@@ -16,7 +16,7 @@ from .base import TestCase
 import os
 
 from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError, WorkDirContext, \
-    init_logging
+    program_fails_no_log, program_succeeds_no_log, program_succeeds_empty_output
 import logging
 from testfixtures import LogCapture
 
@@ -88,3 +88,13 @@ Output!
 Standard error from external program {{ echo Output!; echo Error! >&2; exit 1 }} running in '.*':
 Error!
 \(end of standard error\)""".strip())
+
+    def test_shortcut_functinos(self):
+        self.assertTrue(program_fails_no_log('false'))
+        self.assertFalse(program_fails_no_log('true'))
+        self.assertFalse(program_succeeds_no_log('false'))
+        self.assertTrue(program_succeeds_no_log('true'))
+        self.assertTrue(program_succeeds_empty_output('true'))
+        self.assertFalse(program_succeeds_empty_output('false'))
+        with self.assertRaises(ExternalProgramError):
+            self.assertTrue(program_succeeds_empty_output('echo foo'))

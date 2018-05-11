@@ -21,20 +21,49 @@ from yugabyte_pycommon.text_manipulation import cmd_line_args_to_str, decode_utf
 from yugabyte_pycommon.logging_util import is_verbose_mode
 
 
+# Default number of lines to shorten long stdout/stderr to.
+DEFAULT_MAX_LINES_TO_SHOW = 1000
+
+
 class ProgramResult:
     """
     This represents the result of executing an external program.
     """
-    def __init__(self, cmd_line, returncode, stdout, stderr, error_msg, program_path):
+    def __init__(self, cmd_line, returncode, stdout, stderr, error_msg, program_path,
+                 invocation_details_str, max_lines_to_show):
         self.cmd_line = cmd_line
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
         self.error_msg = error_msg
         self.program_path = program_path
+        self.invocation_details_str = invocation_details_str
+        self.max_lines_to_show = max_lines_to_show
 
     def success(self):
+        return self.returncode == 0
+
+    def failure(self):
         return self.returncode != 0
+
+    def _wrap_for_error_msg(self, stream_type):
+        assert stream_type in ['output', 'error']
+        if stream_type == 'output':
+            value = self.stdout
+        else:
+            value = self.stderr
+        if not value.strip():
+            return ""
+        return "\nStandard {} from {}:\n{}\n(end of standard {})\n".format(
+            stream_type, self.invocation_details_str,
+            trim_long_text(value, self.max_lines_to_show),
+            stream_type)
+
+    def stdout_for_error_msg(self):
+        return self._wrap_for_error_msg("output")
+
+    def stderr_for_error_msg(self):
+        return self._wrap_for_error_msg("error")
 
 
 class ExternalProgramError(Exception):
@@ -64,8 +93,8 @@ class WorkDirContext:
         os.chdir(self.thread_local.old_dir)
 
 
-def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
-                cwd=None, shell=None, **kwargs):
+def run_program(args, error_ok=False, report_errors=None,
+                max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
@@ -121,24 +150,18 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
         returncode=program_subprocess.returncode,
         stdout=clean_stdout,
         stderr=clean_stderr,
-        error_msg=error_msg)
+        error_msg=error_msg,
+        invocation_details_str=invocation_details_str,
+        max_lines_to_show=max_lines_to_show)
 
-    logging.info("report_errors=%s", report_errors)
     if program_subprocess.returncode != 0:
         error_msg = "Non-zero exit code {} from {}.".format(
                 program_subprocess.returncode,
                 invocation_details_str,
                 program_subprocess.returncode, cmd_line_str)
 
-        def wrap_for_error_msg(output_or_error, value):
-            if not value.strip():
-                return ""
-            return "\nStandard {} from {}:\n{}\n(end of standard {})\n".format(
-                output_or_error, invocation_details_str, trim_long_text(value, max_error_lines),
-                output_or_error)
-
-        error_msg += wrap_for_error_msg("output", clean_stdout)
-        error_msg += wrap_for_error_msg("error", clean_stderr)
+        error_msg += result.stdout_for_error_msg()
+        error_msg += result.stderr_for_error_msg()
         error_msg = error_msg.rstrip()
 
         if report_errors is None:
@@ -151,3 +174,45 @@ def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
             raise ExternalProgramError(error_msg, result)
 
     return result
+
+
+def program_fails_no_log(args, **kwargs):
+    """
+    Run the given program, and returns if it failed. Does not log anything in case of success
+    or failure.
+    :param args: command line arguments or a single string to run as a shell command
+    :param kwargs: additional keyword arguments for subprocess.Popen
+    :return: True if the program succeeded
+    """
+    return run_program(args, error_ok=True, report_errors=False, **kwargs).failure()
+
+
+def program_succeeds_no_log(args, **kwargs):
+    """
+    Run the given program, and returns True if it succeeded. Does not log anything in case of
+    success or failure.
+    :param args: command line arguments or a single string to run as a shell command
+    :param kwargs: additional keyword arguments for subprocess.Popen
+    :return: True if the program failed
+    """
+    return run_program(args, error_ok=True, report_errors=False, **kwargs).success()
+
+
+def program_succeeds_empty_output(args, **kwargs):
+    """
+    Runs a program that is not expected to produce any output.
+    :param args: command line arguments or a single string to run as a shell command
+    :param kwargs: additional keyword arguments for subprocess.Popen
+    :raises ExternalProgramError: if the program succeeds but produces extra output
+    :return: True if the program succeeds and does not produce any output
+    """
+    result = run_program(args, error_ok=True, report_errors=False, **kwargs)
+    if result.failure():
+        return False
+
+    if result.stdout.strip():
+        error_msg = "Unexpected output in case of success. " + result.stdout_for_error_msg()
+        logging.error(error_msg)
+        raise ExternalProgramError(error_msg, result)
+
+    return True
