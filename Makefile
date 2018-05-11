@@ -35,6 +35,7 @@ tox:
 release: tox
 	rm -f dist/*
 	python setup.py sdist
+	pip install --user twine
 	twine upload dist/yugabyte_pycommon*.tar.gz
 
 #docs:
