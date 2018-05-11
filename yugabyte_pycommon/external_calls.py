@@ -66,7 +66,8 @@ class WorkDirContext:
         work_dir_context_stack.pop()
 
 
-def run_program(args, error_ok=False, max_error_lines=10000, cwd=None, shell=None, **kwargs):
+def run_program(args, error_ok=False, report_errors=None, max_error_lines=10000,
+                cwd=None, shell=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
@@ -131,6 +132,12 @@ def run_program(args, error_ok=False, max_error_lines=10000, cwd=None, shell=Non
                 program_subprocess.returncode, cmd_line_str,
                 trim_long_text(clean_stdout, max_error_lines),
                 trim_long_text(clean_stderr, max_error_lines))
+        if report_errors is None:
+            report_errors = not error_ok
+        if report_errors:
+            logging.error(error_msg)
+        # TODO: optionally write raw stdout/stderr to files for better debugging.
+
         if not error_ok:
             raise ExternalProgramError(error_msg, result)
 
