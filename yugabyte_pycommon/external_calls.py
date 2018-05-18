@@ -30,7 +30,7 @@ class ProgramResult:
     This represents the result of executing an external program.
     """
     def __init__(self, cmd_line, returncode, stdout, stderr, error_msg, program_path,
-                 invocation_details_str, max_lines_to_show):
+                 invocation_details_str, max_lines_to_show, output_captured):
         self.cmd_line = cmd_line
         self.returncode = returncode
         self.stdout = stdout
@@ -39,6 +39,7 @@ class ProgramResult:
         self.program_path = program_path
         self.invocation_details_str = invocation_details_str
         self.max_lines_to_show = max_lines_to_show
+        self.output_captured = output_captured
 
     def success(self):
         return self.returncode == 0
@@ -93,13 +94,12 @@ class WorkDirContext:
         os.chdir(self.thread_local.old_dir)
 
 
-def run_program(args, error_ok=False, report_errors=None,
+def run_program(args, error_ok=False, report_errors=None, capture_output=True,
                 max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
     """
-    ("Hello world!")
     if isinstance(args, tuple):
         args = list(args)
 
@@ -123,22 +123,25 @@ def run_program(args, error_ok=False, report_errors=None,
         logging.info("Running %s", invocation_details_str)
 
     try:
+        output_redirection = subprocess.PIPE if capture_output else None
         program_subprocess = subprocess.Popen(
             args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=output_redirection,
+            stderr=output_redirection,
             shell=shell,
             cwd=cwd,
             **kwargs)
+        program_stdout, program_stderr = program_subprocess.communicate()
 
     except OSError:
         logging.error("Failed to run %s", invocation_details_str)
         raise
 
-    program_stdout, program_stderr = program_subprocess.communicate()
     error_msg = None
 
     def cleanup_output(out_str):
+        if out_str is None:
+            return None
         return decode_utf8(out_str.rstrip())
 
     clean_stdout = cleanup_output(program_stdout)
@@ -152,7 +155,8 @@ def run_program(args, error_ok=False, report_errors=None,
         stderr=clean_stderr,
         error_msg=error_msg,
         invocation_details_str=invocation_details_str,
-        max_lines_to_show=max_lines_to_show)
+        max_lines_to_show=max_lines_to_show,
+        output_captured=capture_output)
 
     if program_subprocess.returncode != 0:
         error_msg = "Non-zero exit code {} from {}.".format(

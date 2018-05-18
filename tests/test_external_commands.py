@@ -89,7 +89,7 @@ Standard error from external program {{ echo Output!; echo Error! >&2; exit 1 }}
 Error!
 \(end of standard error\)""".strip())
 
-    def test_shortcut_functinos(self):
+    def test_shortcut_functions(self):
         self.assertTrue(program_fails_no_log('false'))
         self.assertFalse(program_fails_no_log('true'))
         self.assertFalse(program_succeeds_no_log('false'))
@@ -98,3 +98,11 @@ Error!
         self.assertFalse(program_succeeds_empty_output('false'))
         with self.assertRaises(ExternalProgramError):
             self.assertTrue(program_succeeds_empty_output('echo foo'))
+
+    def test_no_output_capture(self):
+        result = run_program(
+            'echo "This is expected to show up in the test output"',
+            capture_output=False)
+        self.assertIsNone(result.stdout)
+        self.assertIsNone(result.stderr)
+        self.assertFalse(result.output_captured)
