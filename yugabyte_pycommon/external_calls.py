@@ -53,7 +53,7 @@ class ProgramResult:
             value = self.stdout
         else:
             value = self.stderr
-        if not value.strip():
+        if value is None or not value.strip():
             return ""
         return "\nStandard {} from {}:\n{}\n(end of standard {})\n".format(
             stream_type, self.invocation_details_str,
