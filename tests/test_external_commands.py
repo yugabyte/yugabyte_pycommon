@@ -118,14 +118,40 @@ Error!
 
         result = run_program(
             'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1', error_ok=True)
-        self.assertEquals(
+        self.assertRegexpMatches(
+            result.error_msg.strip(),
 """
-Non-zero exit code 1 from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon'.
-Standard output from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon':
+Non-zero exit code 1 from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*'.
+Standard output from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*':
  This is stdout!
-(end of standard output)
+\(end of standard output\)
 
-Standard error from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon':
+Standard error from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*':
  This is stderr!
-(end of standard error)
-""".strip(),  result.error_msg.strip())
+\(end of standard error\)
+""".strip())
+
+    def test_stdout_and_stderr_together(self):
+        self.assertRegexpMatches(
+            run_program('echo foo').get_stdout_and_stderr_together().strip(), r"""
+Standard output from external program {{ echo foo }} running in '.*':
+foo
+\(end of standard output\)
+            """.strip())
+        self.assertRegexpMatches(
+            run_program('echo bar >&2').get_stdout_and_stderr_together().strip(), r"""
+Standard error from external program {{ echo bar >&2 }} running in '.*':
+bar
+\(end of standard error\)
+            """.strip())
+        self.assertRegexpMatches(
+            run_program('echo foo; echo bar >&2').get_stdout_and_stderr_together().strip(), r"""
+Standard output from external program {{ echo foo; echo bar >&2 }} running in '.*':
+foo
+\(end of standard output\)
+
+Standard error from external program {{ echo foo; echo bar >&2 }} running in '.*':
+bar
+\(end of standard error\)
+            """.strip())
+

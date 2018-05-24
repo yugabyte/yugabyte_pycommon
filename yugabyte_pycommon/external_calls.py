@@ -50,14 +50,18 @@ class ProgramResult:
     def failure(self):
         return self.returncode != 0
 
+    def get_stdout_and_stderr_together(self):
+        stdout_and_stderr = (
+            self.get_user_friendly_stdout_msg() + self.get_user_friendly_stderr_msg())
+        if not stdout_and_stderr:
+            stdout_and_stderr = "No stdout or stderr from command: " + self.invocation_details_str
+        return stdout_and_stderr
+
     def print_output_to_stdout(self):
         """
         Print both stdout and stderr of the external program to the stdout.
         """
-        stdout_and_stderr = self.stdout_for_error_msg() + self.stdout_for_log_msg()
-        if not stdout_and_stderr:
-            stdout_and_stderr = "No stdout or stderr from command: " + self.invocation_details_str
-        sys.stdout.write(stdout_and_stderr)
+        sys.stdout.write(self.get_stdout_and_stderr_together())
         sys.stdout.flush()
 
     def _set_error_msg(self):
@@ -70,8 +74,8 @@ class ProgramResult:
             self.invocation_details_str,
             self.returncode, cmd_line_args_to_str)
 
-        self.error_msg += self.stdout_for_error_msg()
-        self.error_msg += self.stderr_for_error_msg()
+        self.error_msg += self.get_user_friendly_stdout_msg()
+        self.error_msg += self.get_user_friendly_stderr_msg()
         self.error_msg = self.error_msg.rstrip()
 
     def _wrap_for_error_msg(self, stream_type):
@@ -87,10 +91,10 @@ class ProgramResult:
             trim_long_text(value, self.max_lines_to_show),
             stream_type)
 
-    def stdout_for_error_msg(self):
+    def get_user_friendly_stdout_msg(self):
         return self._wrap_for_error_msg("output")
 
-    def stderr_for_error_msg(self):
+    def get_user_friendly_stderr_msg(self):
         return self._wrap_for_error_msg("error")
 
     def raise_error_if_failed(self):
@@ -242,7 +246,7 @@ def program_succeeds_empty_output(args, **kwargs):
         return False
 
     if result.stdout.strip():
-        error_msg = "Unexpected output in case of success. " + result.stdout_for_error_msg()
+        error_msg = "Unexpected output in case of success. " + result.get_user_friendly_stdout_msg()
         logging.error(error_msg)
         raise ExternalProgramError(error_msg, result)
 
