@@ -13,6 +13,7 @@
 """Utilities for running external commands"""
 
 import os
+import sys
 import logging
 import subprocess
 import threading
@@ -48,6 +49,16 @@ class ProgramResult:
 
     def failure(self):
         return self.returncode != 0
+
+    def print_output_to_stdout(self):
+        """
+        Print both stdout and stderr of the external program to the stdout.
+        """
+        stdout_and_stderr = self.stdout_for_error_msg() + self.stdout_for_log_msg()
+        if not stdout_and_stderr:
+            stdout_and_stderr = "No stdout or stderr from command: " + self.invocation_details_str
+        sys.stdout.write(stdout_and_stderr)
+        sys.stdout.flush()
 
     def _set_error_msg(self):
         if self.returncode == 0:
