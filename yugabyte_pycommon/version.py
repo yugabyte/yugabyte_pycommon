@@ -10,4 +10,4 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
-__version__ = '1.7.3'  # NOQA
+__version__ = '1.7.4'  # NOQA

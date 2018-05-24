@@ -18,7 +18,7 @@ import re
 def quote_for_bash(s):
     if s == '':
         return "''"
-    if re.search(r"""[ '"${}()\\]""", s):
+    if re.search(r"""[ ;'"${}()\\]""", s):
         return "'" + s.replace("'", r"'\''") + "'"
     return s
 
