@@ -50,6 +50,10 @@ class ProgramResult:
         return self.returncode != 0
 
     def _set_error_msg(self):
+        if self.returncode == 0:
+            self.error_msg = None
+            return
+
         self.error_msg = "Non-zero exit code {} from {}.".format(
             self.returncode,
             self.invocation_details_str,
@@ -77,6 +81,10 @@ class ProgramResult:
 
     def stderr_for_error_msg(self):
         return self._wrap_for_error_msg("error")
+
+    def raise_error_if_failed(self):
+        if self.failure():
+            raise ExternalProgramError(self.error_msg, self)
 
 
 class ExternalProgramError(Exception):
@@ -173,7 +181,7 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         if report_errors:
             logging.error(result.error_msg)
         if not error_ok:
-            raise ExternalProgramError(result.error_msg, result)
+            result.raise_error_if_failed()
 
     return result
 

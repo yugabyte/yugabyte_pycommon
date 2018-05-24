@@ -111,3 +111,21 @@ Error!
         self.assertIsNone(result.stdout)
         self.assertIsNone(result.stderr)
         self.assertFalse(result.output_captured)
+
+    def test_error_msg(self):
+        # No error message if exit code is 0.
+        self.assertIsNone(run_program('true').error_msg)
+
+        result = run_program(
+            'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1', error_ok=True)
+        self.assertEquals(
+"""
+Non-zero exit code 1 from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon'.
+Standard output from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon':
+ This is stdout!
+(end of standard output)
+
+Standard error from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '/r/home/mbautin/code/yugabyte_pycommon':
+ This is stderr!
+(end of standard error)
+""".strip(),  result.error_msg.strip())
