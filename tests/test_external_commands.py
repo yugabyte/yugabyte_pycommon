@@ -16,7 +16,7 @@ from .base import TestCase
 import os
 
 from yugabyte_pycommon import run_program, quote_for_bash, ExternalProgramError, WorkDirContext, \
-    program_fails_no_log, program_succeeds_no_log, program_succeeds_empty_output
+    program_fails_no_log, program_succeeds_no_log, program_succeeds_empty_output, check_run_program
 import logging
 from testfixtures import LogCapture
 
@@ -98,6 +98,11 @@ Error!
         self.assertFalse(program_succeeds_empty_output('false'))
         with self.assertRaises(ExternalProgramError):
             self.assertTrue(program_succeeds_empty_output('echo foo'))
+
+    def test_check_run_program(self):
+        self.assertEquals(0, check_run_program('true'))
+        with self.assertRaises(ExternalProgramError):
+            check_run_program('false')
 
     def test_no_output_capture(self):
         result = run_program(

@@ -29,23 +29,35 @@ class ProgramResult:
     """
     This represents the result of executing an external program.
     """
-    def __init__(self, cmd_line, returncode, stdout, stderr, error_msg, program_path,
+    def __init__(self, cmd_line, returncode, stdout, stderr, program_path,
                  invocation_details_str, max_lines_to_show, output_captured):
         self.cmd_line = cmd_line
+        self.cmd_line_str = cmd_line_args_to_str(self.cmd_line)
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
-        self.error_msg = error_msg
         self.program_path = program_path
         self.invocation_details_str = invocation_details_str
         self.max_lines_to_show = max_lines_to_show
         self.output_captured = output_captured
+
+        self._set_error_msg()
 
     def success(self):
         return self.returncode == 0
 
     def failure(self):
         return self.returncode != 0
+
+    def _set_error_msg(self):
+        self.error_msg = "Non-zero exit code {} from {}.".format(
+            self.returncode,
+            self.invocation_details_str,
+            self.returncode, cmd_line_args_to_str)
+
+        self.error_msg += self.stdout_for_error_msg()
+        self.error_msg += self.stderr_for_error_msg()
+        self.error_msg = self.error_msg.rstrip()
 
     def _wrap_for_error_msg(self, stream_type):
         assert stream_type in ['output', 'error']
@@ -137,8 +149,6 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         logging.error("Failed to run %s", invocation_details_str)
         raise
 
-    error_msg = None
-
     def cleanup_output(out_str):
         if out_str is None:
             return None
@@ -153,31 +163,29 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         returncode=program_subprocess.returncode,
         stdout=clean_stdout,
         stderr=clean_stderr,
-        error_msg=error_msg,
         invocation_details_str=invocation_details_str,
         max_lines_to_show=max_lines_to_show,
         output_captured=capture_output)
 
     if program_subprocess.returncode != 0:
-        error_msg = "Non-zero exit code {} from {}.".format(
-                program_subprocess.returncode,
-                invocation_details_str,
-                program_subprocess.returncode, cmd_line_str)
-
-        error_msg += result.stdout_for_error_msg()
-        error_msg += result.stderr_for_error_msg()
-        error_msg = error_msg.rstrip()
-
         if report_errors is None:
             report_errors = not error_ok
         if report_errors:
-            logging.error(error_msg)
-        # TODO: optionally write raw stdout/stderr to files for better debugging.
-
+            logging.error(result.error_msg)
         if not error_ok:
-            raise ExternalProgramError(error_msg, result)
+            raise ExternalProgramError(result.error_msg, result)
 
     return result
+
+
+def check_run_program(*args, **kwargs):
+    """
+    Similar to subprocess.check_call but using our run_program facility.
+    """
+    kwargs['capture_output'] = False
+    kwargs['report_errors'] = True
+    run_program(*args, **kwargs)
+    return 0
 
 
 def program_fails_no_log(args, **kwargs):
