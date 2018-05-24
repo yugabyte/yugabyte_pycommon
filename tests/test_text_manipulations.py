@@ -11,7 +11,7 @@
 # under the License.
 #
 
-from yugabyte_pycommon import trim_long_text
+from yugabyte_pycommon import trim_long_text, run_program, quote_for_bash
 
 from .base import TestCase
 
@@ -35,3 +35,29 @@ class TextManipulationsTestCase(TestCase):
         self.assertEquals("1\n(8 lines skipped)\n10", trim_long_text(long_text, 3))
         self.assertEquals("1\n(8 lines skipped)\n10", trim_long_text(long_text, 2))
         self.assertEquals("1\n(8 lines skipped)\n10", trim_long_text(long_text, 1))
+
+
+    def test_quote_for_bash(self):
+        for s in [
+            '',
+            'a',
+            'a b'
+            '"foo"'
+            'foo"bar',
+            'foo " bar',
+            "foo'bar",
+            '$foo $bar',
+            "\\",
+            "\\\\",
+            "\\\\\\",
+            '"' + "'",
+            '"' + "'" + '"' + "'",
+            r"""'\''""",
+            'foo bar',
+            ' ',
+            'foo ',
+            ' foo',
+            ' foo bar '
+        ]:
+            result = run_program('echo -n ' + quote_for_bash(s), shell=True)
+            self.assertEquals(s, result.stdout)

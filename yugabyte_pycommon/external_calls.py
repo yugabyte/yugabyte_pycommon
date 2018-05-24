@@ -30,10 +30,10 @@ class ProgramResult:
     """
     This represents the result of executing an external program.
     """
-    def __init__(self, cmd_line, returncode, stdout, stderr, program_path,
+    def __init__(self, cmd_line, cmd_line_str, returncode, stdout, stderr, program_path,
                  invocation_details_str, max_lines_to_show, output_captured):
         self.cmd_line = cmd_line
-        self.cmd_line_str = cmd_line_args_to_str(self.cmd_line)
+        self.cmd_line_str = cmd_line_str
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
@@ -86,6 +86,7 @@ class ProgramResult:
             value = self.stderr
         if value is None or not value.strip():
             return ""
+        value = value.rstrip()
         return "\nStandard {} from {}:\n{}\n(end of standard {})\n".format(
             stream_type, self.invocation_details_str,
             trim_long_text(value, self.max_lines_to_show),
@@ -135,22 +136,29 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
     Run the given program identified by its argument list, and return a ProgramResult object.
     :param error_ok: False to raise an exception on errors, True not to raise it.
     """
-    if isinstance(args, tuple):
-        args = list(args)
+    if isinstance(args, str) and shell is None:
+        shell = True
 
     if isinstance(args, str):
+        # This is a special case, but very common.
+        cmd_line_str = args
         args = [args]
-        if shell is None:
-            shell = True
+    else:
+        if isinstance(args, tuple):
+            args = list(args)
 
-    def normalize_arg(arg):
-        if isinstance(arg, int):
-            return str(arg)
-        return arg
+        if isinstance(args, str):
+            args = [args]
 
-    args = [normalize_arg(arg) for arg in args]
+        def normalize_arg(arg):
+            if isinstance(arg, int):
+                return str(arg)
+            return arg
 
-    cmd_line_str = cmd_line_args_to_str(args)
+        args = [normalize_arg(arg) for arg in args]
+
+        cmd_line_str = cmd_line_args_to_str(args)
+
     invocation_details_str = "external program {{ %s }} running in '%s'" % (
             cmd_line_str, cwd or os.getcwd())
 
@@ -175,13 +183,14 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
     def cleanup_output(out_str):
         if out_str is None:
             return None
-        return decode_utf8(out_str.rstrip())
+        return decode_utf8(out_str)
 
     clean_stdout = cleanup_output(program_stdout)
     clean_stderr = cleanup_output(program_stderr)
 
     result = ProgramResult(
         cmd_line=args,
+        cmd_line_str=cmd_line_str,
         program_path=os.path.realpath(args[0]),
         returncode=program_subprocess.returncode,
         stdout=clean_stdout,

@@ -32,26 +32,6 @@ class ExternalCommandsTestCase(TestCase):
             result = run_program("exit %d" % exit_code, shell=True, error_ok=exit_code != 0)
             self.assertEquals(exit_code, result.returncode)
 
-    def test_quote_for_bash(self):
-        for s in [
-            '',
-            'a',
-            'a b'
-            '"foo"'
-            'foo"bar',
-            'foo " bar',
-            "foo'bar",
-            '$foo $bar',
-            "\\",
-            "\\\\",
-            "\\\\\\",
-            '"' + "'",
-            '"' + "'" + '"' + "'",
-            r"""'\''"""
-        ]:
-            result = run_program('echo ' + quote_for_bash(s), shell=True)
-            self.assertEquals(s, result.stdout)
-
     def test_error_reporing(self):
         with self.assertRaises(ExternalProgramError):
             run_program('false')
@@ -61,7 +41,7 @@ class ExternalCommandsTestCase(TestCase):
         for d in ['/tmp', os.path.expanduser('~')]:
             with WorkDirContext(d):
                 self.assertEquals(d, os.getcwd())
-                self.assertEquals(d, run_program('pwd').stdout)
+                self.assertEquals(d, run_program('pwd').stdout.strip())
 
         self.assertEquals(old_work_dir, os.getcwd())
 
@@ -121,12 +101,12 @@ Error!
         self.assertRegexpMatches(
             result.error_msg.strip(),
 """
-Non-zero exit code 1 from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*'.
-Standard output from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*':
+Non-zero exit code 1 from external program {{ echo " This is stdout! "; echo " This is stderr! " >&2; exit 1 }} running in '.*'.
+Standard output from external program {{ echo " This is stdout! "; echo " This is stderr! " >&2; exit 1 }} running in '.*':
  This is stdout!
 \(end of standard output\)
 
-Standard error from external program {{ 'echo " This is stdout! "; echo " This is stderr! " >&2; exit 1' }} running in '.*':
+Standard error from external program {{ echo " This is stdout! "; echo " This is stderr! " >&2; exit 1 }} running in '.*':
  This is stderr!
 \(end of standard error\)
 """.strip())
