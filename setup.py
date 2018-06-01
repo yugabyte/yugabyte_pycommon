@@ -24,6 +24,10 @@ tests_require = [
     'testfixtures'
 ]
 
+docs_require = [
+    'sphinx'
+]
+
 setup(
     name='yugabyte_pycommon',
     version=__version__,
@@ -35,7 +39,7 @@ setup(
         'Common utilities used in YugaByte Database\'s build infrastructure but could also be '
         'useful for anyone. E.g. convenient utilities for running external programs, logging, etc.',
     keywords='tool tools utility utilities yugabyte run command external process group_by',
-    author='Mikhail Bautin',
+    author='YugaByte, Inc.',
     author_email='mbautin@users.noreply.github.com',
     url='https://github.com/yugabyte/yugabyte_pycommon',
     license='Apache 2.0',
@@ -57,6 +61,7 @@ setup(
     ],
     extras_require={
         'tests': tests_require,
+        'docs': docs_require
     },
     entry_points={
         'console_scripts': [
