@@ -5,7 +5,7 @@
 # http://www.opensource.org/licenses/Apache 2.0-license
 #  Copyright (c) YugaByte, Inc.
 
-.PHONY: docs list release setup test tox coverage-html unit
+.PHONY: docs list release setup test tox coverage-html unit venv
 
 # lists all available targets
 list:
@@ -42,4 +42,8 @@ release: tox
 	twine upload dist/yugabyte_pycommon*.tar.gz
 
 docs:
-	@cd docs && make html && open _build/html/index.html
+	@. venv/bin/activate && cd docs && make html
+
+venv:
+	python3 -m virtualenv venv
+	. venv/bin/activate && pip install -e .[core] .[docs]
