@@ -10,7 +10,9 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
-"""Utilities for running external commands"""
+"""
+Utilities for running external commands.
+"""
 
 import os
 import sys
@@ -45,12 +47,22 @@ class ProgramResult:
         self._set_error_msg()
 
     def success(self):
+        """
+        :return: whether the external program exited with a success
+        """
         return self.returncode == 0
 
     def failure(self):
+        """
+        :return: whether the external program exited with a failure
+        """
         return self.returncode != 0
 
     def get_stdout_and_stderr_together(self):
+        """
+        :return: a string with user-friendly versions of stdout and stderr of the external program,
+                 concatenated together.
+        """
         stdout_and_stderr = (
             self.get_user_friendly_stdout_msg() + self.get_user_friendly_stderr_msg())
         if not stdout_and_stderr:
@@ -93,12 +105,22 @@ class ProgramResult:
             stream_type)
 
     def get_user_friendly_stdout_msg(self):
+        """
+        :return: a user-friendly version of the external program's standard output
+        """
         return self._wrap_for_error_msg("output")
 
     def get_user_friendly_stderr_msg(self):
+        """
+        :return: a user-friendly version of the external program's standard error
+        """
         return self._wrap_for_error_msg("error")
 
     def raise_error_if_failed(self):
+        """
+        This is useful for delayed handling of external program errors. Raises an error if the
+        external program failed. Otherwise does nothing.
+        """
         if self.failure():
             raise ExternalProgramError(self.error_msg, self)
 
@@ -111,12 +133,14 @@ class ExternalProgramError(Exception):
 
 class WorkDirContext:
     """
-    Allows setting a context for running external programs.
+    Allows setting a working directory context for running external programs. The directory will
+    be changed to the given directory on entering the block, and will be restored to the old
+    directory on exit.
 
-    Example:
+    .. code-block:: python
 
-    with WorkDirContext('/tmp'):
-        run_program('ls')
+       with WorkDirContext('/tmp'):
+           run_program('ls')
     """
     def __init__(self, work_dir):
         self.thread_local = threading.local()
@@ -133,8 +157,11 @@ class WorkDirContext:
 def run_program(args, error_ok=False, report_errors=None, capture_output=True,
                 max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None, **kwargs):
     """
-    Run the given program identified by its argument list, and return a ProgramResult object.
-    :param error_ok: False to raise an exception on errors, True not to raise it.
+    Run the given program identified by its argument list, and return a :py:class:`ProgramResult`
+    object.
+
+    :param error_ok: if this is true, we won't raise an exception in case the external program
+                     fails.
     """
     if isinstance(args, str) and shell is None:
         shell = True
@@ -224,9 +251,10 @@ def program_fails_no_log(args, **kwargs):
     """
     Run the given program, and returns if it failed. Does not log anything in case of success
     or failure.
+
     :param args: command line arguments or a single string to run as a shell command
     :param kwargs: additional keyword arguments for subprocess.Popen
-    :return: True if the program succeeded
+    :return: ``True`` if the program succeeded
     """
     return run_program(args, error_ok=True, report_errors=False, **kwargs).failure()
 
@@ -235,9 +263,10 @@ def program_succeeds_no_log(args, **kwargs):
     """
     Run the given program, and returns True if it succeeded. Does not log anything in case of
     success or failure.
+
     :param args: command line arguments or a single string to run as a shell command
     :param kwargs: additional keyword arguments for subprocess.Popen
-    :return: True if the program failed
+    :return: ``True`` if the program failed
     """
     return run_program(args, error_ok=True, report_errors=False, **kwargs).success()
 
@@ -245,10 +274,11 @@ def program_succeeds_no_log(args, **kwargs):
 def program_succeeds_empty_output(args, **kwargs):
     """
     Runs a program that is not expected to produce any output.
+
     :param args: command line arguments or a single string to run as a shell command
     :param kwargs: additional keyword arguments for subprocess.Popen
     :raises ExternalProgramError: if the program succeeds but produces extra output
-    :return: True if the program succeeds and does not produce any output
+    :return: ``True`` if the program succeeds and does not produce any output
     """
     result = run_program(args, error_ok=True, report_errors=False, **kwargs)
     if result.failure():

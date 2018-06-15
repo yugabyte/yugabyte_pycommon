@@ -18,7 +18,7 @@ def group_by_to_list(arr, key_fn):
     Group the given list-like collection by the key computed using the given function. The
     collection does not have to be sorted in advance.
 
-    @return a list of (key, list_of_values) tuples where keys are sorted
+    :return: a list of (key, list_of_values) tuples where keys are sorted
 
     >>> group_by_to_list([100, 201, 300, 301, 400], lambda x: x % 2)
     [(0, [100, 300, 400]), (1, [201, 301])]
@@ -68,6 +68,13 @@ def make_list(obj):
 
 
 def make_set(obj):
+    """
+    Makes a set of a given object. Returns the same object if it is already a set. Otherwise
+    follows the same logic as :py:meth:`make_list`.
+
+    :param obj: a collection object
+    :return: a set created from the given object
+    """
     if isinstance(obj, set):
         return obj
     return set(make_list(obj))

@@ -62,6 +62,12 @@ class TextManipulationsTestCase(TestCase):
             ' ;',
             '; ',
             ' ; '
+            '.',
+            '*',
+            ' .',
+            '. ',
+            '* ',
+            ' *'
         ]:
             result = run_program('echo -n ' + quote_for_bash(s), shell=True)
             self.assertEquals(s, result.stdout)
