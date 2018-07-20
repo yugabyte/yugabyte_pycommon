@@ -1,7 +1,4 @@
-# yugabyte_pycommon
+yugabyte_pycommon
+=================
 
-# Running unit tests
-
-```
-make tox
-```
+Read the documentation at https://yugabyte-pycommon.readthedocs.io/en/latest/
