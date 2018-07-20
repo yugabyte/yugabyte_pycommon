@@ -154,3 +154,15 @@ texinfo_documents = [
      author, 'yugabyte_pycommon', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+
+# Running sphinx-apidoc as suggested at https://github.com/rtfd/readthedocs.org/issues/1139
+
+def run_apidoc(_):
+    modules = ['yugabyte_pycommon']
+    import subprocess
+    subprocess.check_call('sphinx-apidoc -o source --force ../yugabyte_pycommon', shell=True)
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
