@@ -14,7 +14,12 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath('.'))))
+
+# If this file is at ~/code/yugabyte_pycommon/docs/source/conf.py, this will add the directory
+# ~/code/yugabyte_pycommon to the system path.
+yugabyte_pycommon_src_root = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))))
+sys.path.insert(0, yugabyte_pycommon_src_root)
 
 
 # -- Project information -----------------------------------------------------
@@ -161,7 +166,9 @@ texinfo_documents = [
 def run_apidoc(_):
     modules = ['yugabyte_pycommon']
     import subprocess
-    subprocess.check_call('sphinx-apidoc -o source --force ../yugabyte_pycommon', shell=True)
+    import pipes
+    subprocess.check_call('sphinx-apidoc -o source --force {}'.format(
+        pipes.quote(os.path.join(yugabyte_pycommon_src_root, 'yugabyte_pycommon'))), shell=True)
 
 
 def setup(app):
