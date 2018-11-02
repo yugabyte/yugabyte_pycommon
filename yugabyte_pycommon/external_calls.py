@@ -237,8 +237,10 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
             quote_for_bash(stdout_path),
             quote_for_bash(stderr_path)
         )
-        invocation_details_str = ", saving stdout to {{ %s }}, stderr to {{ %s }}" % (
-            stdout_path, stderr_path
+        invocation_details_str += ", saving stdout to {{ %s }}, stderr to {{ %s }}" % (
+            # For the ease of copying and pasting, convert to absolute paths.
+            os.path.abspath(stdout_path),
+            os.path.abspath(stderr_path)
         )
 
     if is_verbose_mode():
