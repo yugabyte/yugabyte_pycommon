@@ -97,12 +97,26 @@ class ProgramResult:
         self.error_msg += self.get_user_friendly_stderr_msg()
         self.error_msg = self.error_msg.rstrip()
 
+    def get_stdout(self):
+        if self.stdout is not None:
+            return self.stdout
+        if self.stdout_path is not None:
+            from yugabyte_pycommon import read_file
+            return read_file(self.stdout_path)
+
+    def get_stderr(self):
+        if self.stderr is not None:
+            return self.stderr
+        if self.stderr_path is not None:
+            from yugabyte_pycommon import read_file
+            return read_file(self.stderr_path)
+
     def _wrap_for_error_msg(self, stream_type):
         assert stream_type in ['output', 'error']
         if stream_type == 'output':
-            value = self.stdout
+            value = self.get_stdout()
         else:
-            value = self.stderr
+            value = self.get_stderr()
         if value is None or not value.strip():
             return ""
         value = value.rstrip()
@@ -130,6 +144,13 @@ class ProgramResult:
         """
         if self.failure():
             raise ExternalProgramError(self.error_msg, self)
+
+    def print_output_and_raise_error_if_failed(self):
+        if self.failure():
+            # TODO: maybe print stdout to stdout, stderr to stderr?
+            # TODO: avoid loading large output into memory.
+            self.print_output_to_stdout()
+            self.raise_error_if_failed()
 
 
 class ExternalProgramError(Exception):
