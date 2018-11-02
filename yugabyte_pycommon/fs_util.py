@@ -10,7 +10,13 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
+"""
+Utilities for manipulating files and the file system.
+"""
+
 import os
+import tempfile
+import atexit
 
 
 def mkdir_p(d):
@@ -28,3 +34,34 @@ def mkdir_p(d):
             return
         raise
 
+
+def get_tmp_file_path(*args, **kwargs):
+    """
+    Generates a temporary file name. Arguments are exactly like those of
+    `tempfile.NamedTemporaryFile`. The file is immediately closed and scheduled to be deleted at
+    exit, unless the `delete_at_exit` parameter value says otherwise.
+    """
+    kwargs['delete'] = False
+    delete_at_exit = False
+    if 'delete_at_exit' in kwargs:
+        delete_at_exit = kwargs.pop('delete_at_exit')
+
+    named_tmp_file = tempfile.NamedTemporaryFile(*args, **kwargs)
+    named_tmp_file.close()
+    file_path = named_tmp_file.name
+    if delete_at_exit:
+        def delete_file():
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        atexit.register(delete_file)
+    return file_path
+
+
+def read_file(file_path):
+    """
+    Reads the contents of the given file.
+    :param file_path: the file path to read
+    :return: the contents of the file
+    """
+    with open(file_path) as f:
+        return f.read()

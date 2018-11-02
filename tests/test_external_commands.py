@@ -10,7 +10,7 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 #
-from yugabyte_pycommon.file_util import get_tmp_file_path, read_file
+from yugabyte_pycommon.fs_util import get_tmp_file_path, read_file
 from .base import TestCase
 
 import os
