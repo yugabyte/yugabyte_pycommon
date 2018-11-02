@@ -39,3 +39,13 @@ def get_tmp_file_path(*args, **kwargs):
                 os.remove(file_path)
         atexit.register(delete_file)
     return file_path
+
+
+def read_file(file_path):
+    """
+    Reads the contents of the given file.
+    :param file_path: the file path to read
+    :return: the contents of the file
+    """
+    with open(file_path) as f:
+        return f.read()

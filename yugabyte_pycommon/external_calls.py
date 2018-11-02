@@ -36,13 +36,16 @@ class ProgramResult:
     """
     This represents the result of executing an external program.
     """
-    def __init__(self, cmd_line, cmd_line_str, returncode, stdout, stderr, program_path,
-                 invocation_details_str, max_lines_to_show, output_captured):
+    def __init__(self, cmd_line, cmd_line_str, returncode, stdout, stdout_path, stderr,
+                 stderr_path, program_path, invocation_details_str, max_lines_to_show,
+                 output_captured):
         self.cmd_line = cmd_line
         self.cmd_line_str = cmd_line_str
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
+        self.stdout_path = stdout_path
+        self.stderr_path = stderr_path
         self.program_path = program_path
         self.invocation_details_str = invocation_details_str
         self.max_lines_to_show = max_lines_to_show
@@ -160,7 +163,7 @@ class WorkDirContext:
 
 def run_program(args, error_ok=False, report_errors=None, capture_output=True,
                 max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None,
-                stdout_file_path=None, stderr_file_path=None, **kwargs):
+                stdout_path=None, stderr_path=None, stdout_stderr_prefix=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a :py:class:`ProgramResult`
     object.
@@ -174,11 +177,13 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         captured in variables inside of the resulting :py:class:`ProgramResult` object.
     :param error_ok: if this is true, we won't raise an exception in case the external program
                      fails.
-    :param stdout_file_path: instead of trying to capture all standard output in memory, save it
+    :param stdout_path: instead of trying to capture all standard output in memory, save it
         to this file. Both `stdout_file_path` and `stderr_file_path` have to be specified or
         unspecified at the same time. Also `shell` has to be true in this mode as we are using
         shell redirections to implement this.
-    :param stderr_file_path: similar to ``stdout_file_path`` but for standard error.
+    :param stderr_path: similar to ``stdout_file_path`` but for standard error.
+    :param stdout_stderr_prefix: allows setting both `stdout_path` and `stderr_path` quickly.
+        Those variables are set to the value of this parameter with `.out` and `.err` appended.
     """
     if isinstance(args, str) and shell is None:
         # If we are given a single string, assume it is a command line to be executed in a shell.
@@ -204,13 +209,22 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
 
         cmd_line_str = cmd_line_args_to_str(args)
 
-    if (stdout_file_path is None) != (stderr_file_path is None):
+    if (stdout_path is None) != (stderr_path is None):
         raise ValueError(
             "stdout_file_path and stderr_file_path have to specified or unspecified at the same "
-            "time. Got: stdout_file_path={}, stderr_file_path={}", stdout_file_path,
-            stderr_file_path)
+            "time. Got: stdout_file_path={}, stderr_file_path={}", stdout_path,
+            stderr_path)
 
-    output_to_files = stdout_file_path is not None
+    output_to_files = stdout_path is not None
+    if stdout_stderr_prefix is not None:
+        if output_to_files:
+            raise ValueError(
+                "stdout_stderr_prefix cannot be specified at the same time with stdout_path "
+                "or stderr_path")
+        stdout_path = stdout_stderr_prefix + '.out'
+        stderr_path = stdout_stderr_prefix + '.err'
+        output_to_files = True
+
     if output_to_files and not shell:
         raise ValueError("If {stdout,stderr}_to_file are specified, shell must be True")
 
@@ -220,11 +234,11 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
     if output_to_files:
         cmd_line_str = '( %s ) >%s 2>%s' % (
             cmd_line_str,
-            quote_for_bash(stdout_file_path),
-            quote_for_bash(stderr_file_path)
+            quote_for_bash(stdout_path),
+            quote_for_bash(stderr_path)
         )
         invocation_details_str = ", saving stdout to {{ %s }}, stderr to {{ %s }}" % (
-            stdout_file_path, stderr_file_path
+            stdout_path, stderr_path
         )
 
     if is_verbose_mode():
@@ -243,7 +257,6 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
                 args_to_run = os.getenv('SHELL', DEFAULT_UNIX_SHELL) + ' ' + quote_for_bash(
                     tmp_script_path)
 
-        logging.info("Invoking: %s", args_to_run)
         program_subprocess = subprocess.Popen(
             args_to_run,
             stdout=output_redirection,
@@ -270,7 +283,7 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         raise
 
     finally:
-        if False and tmp_script_path and os.path.exists(tmp_script_path):
+        if tmp_script_path and os.path.exists(tmp_script_path):
             os.remove(tmp_script_path)
 
     def cleanup_output(out_str):
@@ -287,7 +300,9 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
         program_path=os.path.realpath(args[0]),
         returncode=program_subprocess.returncode,
         stdout=clean_stdout,
+        stdout_path=stdout_path,
         stderr=clean_stderr,
+        stderr_path=stderr_path,
         invocation_details_str=invocation_details_str,
         max_lines_to_show=max_lines_to_show,
         output_captured=capture_output)

@@ -10,7 +10,7 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 #
-from yugabyte_pycommon.file_util import get_tmp_file_path
+from yugabyte_pycommon.file_util import get_tmp_file_path, read_file
 from .base import TestCase
 
 import os
@@ -138,5 +138,25 @@ bar
     def test_redirect_output_to_files(self):
         stdout_path = get_tmp_file_path(prefix='test_redirect_to_file', suffix='.stdout')
         stderr_path = get_tmp_file_path(prefix='test_redirect_to_file', suffix='.stderr')
-        run_program('echo Foo; echo Bar >&2',
-                    stdout_file_path=stdout_path, stderr_file_path=stderr_path)
+        result = run_program('echo Foo; echo Foo 2; echo Bar >&2; echo Bar 2 >&2',
+                    stdout_path=stdout_path, stderr_path=stderr_path)
+        self.assertEqual(0, result.returncode)
+        self.assertIsNone(result.stdout)
+        self.assertIsNone(result.stderr)
+        self.assertEqual("Foo\nFoo 2\n", read_file(stdout_path))
+        self.assertEqual("Bar\nBar 2\n", read_file(stderr_path))
+
+        out_err_prefix = get_tmp_file_path(prefix='test_redirect_to_file_with_prefix')
+        result = run_program(
+            "echo 'This is stdout with one slash: \\. And now two slashes: \\\\.'; "
+            "echo 'And now 3 slashes: \\\\\\. And four: \\\\\\\\.' >&2",
+            stdout_stderr_prefix=out_err_prefix)
+        self.assertEqual(0, result.returncode)
+        self.assertIsNone(result.stdout)
+        self.assertIsNone(result.stderr)
+        self.assertEqual(
+            "This is stdout with one slash: \\. And now two slashes: \\\\.\n",
+            read_file(out_err_prefix + '.out'))
+        self.assertEqual(
+            "And now 3 slashes: \\\\\\. And four: \\\\\\\\.\n",
+            read_file(out_err_prefix + '.err'))
