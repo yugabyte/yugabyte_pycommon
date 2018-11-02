@@ -10,6 +10,9 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 #
+import os
+import tempfile
+import subprocess
 
 from yugabyte_pycommon import trim_long_text, run_program, quote_for_bash
 
@@ -36,9 +39,14 @@ class TextManipulationsTestCase(TestCase):
         self.assertEquals("1\n(8 lines skipped)\n10", trim_long_text(long_text, 2))
         self.assertEquals("1\n(8 lines skipped)\n10", trim_long_text(long_text, 1))
 
-
     def test_quote_for_bash(self):
         for s in [
+            "\\" * 1,
+            "\\" * 2,
+            "\\" * 3,
+            "\\" * 4,
+            "\\" * 5,
+            "\\" * 6,
             '',
             'a',
             'a b'
@@ -47,9 +55,6 @@ class TextManipulationsTestCase(TestCase):
             'foo " bar',
             "foo'bar",
             '$foo $bar',
-            "\\",
-            "\\\\",
-            "\\\\\\",
             '"' + "'",
             '"' + "'" + '"' + "'",
             r"""'\''""",
@@ -69,5 +74,22 @@ class TextManipulationsTestCase(TestCase):
             '* ',
             ' *'
         ]:
-            result = run_program('echo -n ' + quote_for_bash(s), shell=True)
-            self.assertEquals(s, result.stdout)
+            quoted_s = quote_for_bash(s)
+            tmp_file_path = None
+
+            try:
+                with tempfile.NamedTemporaryFile(suffix='.sh', delete=False) as tmp_file:
+                    cmd = 'echo -n ' + quoted_s
+                    tmp_file.write(cmd.encode('utf-8'))
+                    tmp_file_path = tmp_file.name
+
+                result = subprocess.check_output(
+                        ['bash', tmp_file_path]).decode('utf-8')
+                self.assertEqual(s, result,
+                                 "For input string: [[ {} ]], quote_for_bash produced [[ {} ]], "
+                                 "but echo -n with that argument returned: [[ {} ]]".format(
+                                     s, quoted_s, result
+                                 ))
+            finally:
+                if False and tmp_file_path and os.path.exists(tmp_file_path):
+                    os.remove(tmp_file_path)

@@ -10,7 +10,7 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 #
-
+from yugabyte_pycommon.file_util import get_tmp_file_path
 from .base import TestCase
 
 import os
@@ -135,3 +135,8 @@ bar
 \(end of standard error\)
             """.strip())
 
+    def test_redirect_output_to_files(self):
+        stdout_path = get_tmp_file_path(prefix='test_redirect_to_file', suffix='.stdout')
+        stderr_path = get_tmp_file_path(prefix='test_redirect_to_file', suffix='.stderr')
+        run_program('echo Foo; echo Bar >&2',
+                    stdout_file_path=stdout_path, stderr_file_path=stderr_path)

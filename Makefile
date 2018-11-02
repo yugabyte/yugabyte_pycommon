@@ -1,5 +1,6 @@
 # This file is part of yugabyte_pycommon.
 # https://github.com/yugabyte/yugabyte_pycommon
+SHELL:=bash
 
 # Licensed under the Apache 2.0 license:
 # http://www.opensource.org/licenses/Apache 2.0-license
@@ -41,9 +42,11 @@ release: tox
 	pip install --user twine
 	twine upload dist/yugabyte_pycommon*.tar.gz
 
-docs:
+docs: venv
 	@. venv/bin/activate && cd docs && make html
 
 venv:
-	python3 -m virtualenv venv
-	. venv/bin/activate && pip install -e .[core] .[docs]
+	if [[ ! -d venv ]]; then \
+		python3 -m virtualenv venv; \
+		. venv/bin/activate && pip install -e .[core] .[docs]; \
+	fi

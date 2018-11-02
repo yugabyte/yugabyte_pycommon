@@ -16,8 +16,11 @@ import logging
 from yugabyte_pycommon.text_manipulation import get_bool_env_var
 
 
+verbose_mode = False
+
+
 def is_verbose_mode():
-    return get_bool_env_var('YB_VERBOSE')
+    return verbose_mode or get_bool_env_var('YB_VERBOSE')
 
 
 def get_default_log_level():

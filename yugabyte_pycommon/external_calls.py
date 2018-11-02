@@ -18,14 +18,18 @@ import os
 import sys
 import logging
 import subprocess
+import tempfile
 import threading
 
-from yugabyte_pycommon.text_manipulation import cmd_line_args_to_str, decode_utf8, trim_long_text
+from yugabyte_pycommon.text_manipulation import cmd_line_args_to_str, decode_utf8, trim_long_text, \
+    quote_for_bash
 from yugabyte_pycommon.logging_util import is_verbose_mode
 
 
 # Default number of lines to shorten long stdout/stderr to.
 DEFAULT_MAX_LINES_TO_SHOW = 1000
+
+DEFAULT_UNIX_SHELL = 'bash'
 
 
 class ProgramResult:
@@ -155,15 +159,29 @@ class WorkDirContext:
 
 
 def run_program(args, error_ok=False, report_errors=None, capture_output=True,
-                max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None, **kwargs):
+                max_lines_to_show=DEFAULT_MAX_LINES_TO_SHOW, cwd=None, shell=None,
+                stdout_file_path=None, stderr_file_path=None, **kwargs):
     """
     Run the given program identified by its argument list, and return a :py:class:`ProgramResult`
     object.
 
+    :param args: This could be a single string, or a tuple/list of elements where each element is
+        either a string or an integer. If a single string is given as ``args``, and the ``shell``
+        parameter is not specified, it is automatically set to true.
+    :param report_errors: whether errors during execution (as identified by exit code) should be
+        reported in the log.
+    :param capture_output: whether standard output and standard error of the program need to be
+        captured in variables inside of the resulting :py:class:`ProgramResult` object.
     :param error_ok: if this is true, we won't raise an exception in case the external program
                      fails.
+    :param stdout_file_path: instead of trying to capture all standard output in memory, save it
+        to this file. Both `stdout_file_path` and `stderr_file_path` have to be specified or
+        unspecified at the same time. Also `shell` has to be true in this mode as we are using
+        shell redirections to implement this.
+    :param stderr_file_path: similar to ``stdout_file_path`` but for standard error.
     """
     if isinstance(args, str) and shell is None:
+        # If we are given a single string, assume it is a command line to be executed in a shell.
         shell = True
 
     if isinstance(args, str):
@@ -186,26 +204,74 @@ def run_program(args, error_ok=False, report_errors=None, capture_output=True,
 
         cmd_line_str = cmd_line_args_to_str(args)
 
+    if (stdout_file_path is None) != (stderr_file_path is None):
+        raise ValueError(
+            "stdout_file_path and stderr_file_path have to specified or unspecified at the same "
+            "time. Got: stdout_file_path={}, stderr_file_path={}", stdout_file_path,
+            stderr_file_path)
+
+    output_to_files = stdout_file_path is not None
+    if output_to_files and not shell:
+        raise ValueError("If {stdout,stderr}_to_file are specified, shell must be True")
+
     invocation_details_str = "external program {{ %s }} running in '%s'" % (
             cmd_line_str, cwd or os.getcwd())
+
+    if output_to_files:
+        cmd_line_str = '( %s ) >%s 2>%s' % (
+            cmd_line_str,
+            quote_for_bash(stdout_file_path),
+            quote_for_bash(stderr_file_path)
+        )
+        invocation_details_str = ", saving stdout to {{ %s }}, stderr to {{ %s }}" % (
+            stdout_file_path, stderr_file_path
+        )
 
     if is_verbose_mode():
         logging.info("Running %s", invocation_details_str)
 
+    tmp_script_path = None
     try:
-        output_redirection = subprocess.PIPE if capture_output else None
+        output_redirection = subprocess.PIPE if (capture_output and not output_to_files) else None
+        args_to_run = args
+        if shell:
+            # Save the script to a temporary file to avoid anomalies with backslash un-escaping
+            # described at http://bit.ly/2SFoMpN (on Ubuntu 18.04).
+            with tempfile.NamedTemporaryFile(suffix='.sh', delete=False) as tmp_script_file:
+                tmp_script_file.write(cmd_line_str.encode('utf-8'))
+                tmp_script_path = tmp_script_file.name
+                args_to_run = os.getenv('SHELL', DEFAULT_UNIX_SHELL) + ' ' + quote_for_bash(
+                    tmp_script_path)
+
+        logging.info("Invoking: %s", args_to_run)
         program_subprocess = subprocess.Popen(
-            args,
+            args_to_run,
             stdout=output_redirection,
             stderr=output_redirection,
             shell=shell,
             cwd=cwd,
             **kwargs)
+
         program_stdout, program_stderr = program_subprocess.communicate()
+        if output_to_files:
+            def report_unexpected_output(stream_name, output):
+                if output is not None and output.strip():
+                    logging.warn(
+                        "Unexpected standard %s from %s (should have been redirected):\n%s",
+                        stream_name, invocation_details_str, output)
+
+            report_unexpected_output('output', program_stdout)
+            report_unexpected_output('error', program_stderr)
+            program_stdout = None
+            program_stderr = None
 
     except OSError:
         logging.error("Failed to run %s", invocation_details_str)
         raise
+
+    finally:
+        if False and tmp_script_path and os.path.exists(tmp_script_path):
+            os.remove(tmp_script_path)
 
     def cleanup_output(out_str):
         if out_str is None:
