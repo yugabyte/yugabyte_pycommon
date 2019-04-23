@@ -5,6 +5,7 @@ jobs:
       - image: circleci/buildpack-deps:18.04
     steps:
       - checkout
+      - run: sudo apt-get install -y python-pip
       - run: make tox
 workflows:
   version: 2
