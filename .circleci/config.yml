@@ -1,6 +1,6 @@
 version: 2.1
 jobs:
-  build_yugabyte_pycommon:
+  ubuntu1804:
     docker:
       - image: circleci/buildpack-deps:18.04
     steps:
