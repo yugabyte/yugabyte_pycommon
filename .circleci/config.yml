@@ -1,0 +1,13 @@
+version: 2.1
+jobs:
+  build_yugabyte_pycommon:
+    docker:
+      - image: circleci/buildpack-deps:18.04
+    steps:
+      - checkout
+      - run: make tox
+workflows:
+  version: 2
+  build_yugabyte_pycommon:
+    jobs:
+      - ubuntu1804
