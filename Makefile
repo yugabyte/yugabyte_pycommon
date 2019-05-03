@@ -32,17 +32,14 @@ coverage-html: unit
 	@coverage html
 
 # run tests against all supported python versions
-tox:
-	pip install --user tox
+tox: venv
 	@tox
 
-release: tox
+release: tox venv
 	rm -f dist/*
-	python yugabyte_pycommon/update_version.py
-	python setup.py sdist
-	ls dist/*
-	pip install --user twine
-	twine upload dist/yugabyte_pycommon*.tar.gz
+	. venv/bin/activate && python yugabyte_pycommon/update_version.py
+	. venv/bin/activate && python setup.py sdist
+	. venv/bin/activate && twine upload dist/yugabyte_pycommon*.tar.gz
 
 docs: venv
 	@. venv/bin/activate && cd docs && make html
@@ -50,5 +47,5 @@ docs: venv
 venv:
 	if [[ ! -d venv ]]; then \
 		python3 -m virtualenv venv; \
-		. venv/bin/activate && pip install -e .[core] .[docs]; \
 	fi
+	. venv/bin/activate && pip install -e .[core] .[docs];

@@ -29,7 +29,9 @@ tests_require = [
     'coveralls',
     'sphinx',
     'testfixtures',
-    'semver'
+    'semver',
+    'twine',
+    'tox'
 ]
 
 docs_require = [
