@@ -16,7 +16,7 @@ import sys
 import semver
 
 
-ALLOW_LOCAL_CHANGES = True
+ALLOW_LOCAL_CHANGES = False
 
 
 if __name__ == '__main__':
@@ -63,4 +63,4 @@ if __name__ == '__main__':
     subprocess.check_call(['git', 'push', 'origin', 'HEAD:master'])
     new_tag = 'v' + new_version
     subprocess.check_call(['git', 'tag', new_tag])
-    subprocess.check_call(['git', 'push', new_tag])
+    subprocess.check_call(['git', 'push', 'origin', new_tag])
