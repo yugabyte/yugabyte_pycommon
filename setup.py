@@ -1,27 +1,22 @@
 #!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 
-# This file is part of yugabyte_pycommon.
-# https://github.com/yugabyte/yugabyte_pycommon
-
-# Licensed under the Apache 2.0 license:
-# http://www.opensource.org/licenses/Apache 2.0-license
-#  Copyright (c) YugaByte, Inc.
+# Copyright (c) 2019 YugaByte, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied.  See the License for the specific language governing permissions and limitations under
+# the License.
 
 from setuptools import setup, find_packages
+from yugabyte_pycommon import version
 import subprocess
-
-
-def get_version():
-    first_commit = subprocess.check_output(['git', 'rev-list', '--max-parents=0', 'HEAD']).strip()
-    assert len(first_commit) == 40
-    num_commits = int(subprocess.check_output(
-            ['git', 'rev-list', '--count', first_commit.decode('utf-8') + '..HEAD']).strip())
-    local_changes = subprocess.check_output(
-            ['git', 'diff-index', '--name-only', 'HEAD', '--']).strip()
-    patch_version = num_commits * 2 + (1 if local_changes else 0)
-    return '1.9.%d' % patch_version
-
 
 tests_require = [
     'mock',
@@ -33,7 +28,8 @@ tests_require = [
     'ipdb',
     'coveralls',
     'sphinx',
-    'testfixtures'
+    'testfixtures',
+    'semver'
 ]
 
 docs_require = [
@@ -43,7 +39,7 @@ docs_require = [
 
 setup(
     name='yugabyte_pycommon',
-    version=get_version(),
+    version=yugabyte_pycommon_version.compute_version(),
     description='Common utilities used in YugaByte Database\'s build infrastructure but could '
                 'also be useful for anyone. E.g. convenient utilities for running external '
                 'programs, logging, etc. Please give YugaByte DB a star at '
@@ -81,7 +77,7 @@ setup(
         # remember to use 'package-name>=x.y.z,<x.y+1.0' notation (this way you get bugfixes)
     ],
 
-    # A dictionary mapping names of “extras” (optional features of your project) to strings or lists
+    # A dictionary mapping names of "extras" (optional features of your project) to strings or lists
     # of strings specifying what other distributions must be installed to support those features.
     # See the section below on Declaring Dependencies for details and examples of the format of this
     # argument.

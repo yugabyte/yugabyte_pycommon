@@ -1,0 +1,50 @@
+# Copyright (c) 2019 YugaByte, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied.  See the License for the specific language governing permissions and limitations under
+# the License.
+
+import subprocess
+import os
+import sys
+import semver
+
+
+if __name__ == '__main__':
+    local_changes = subprocess.check_output(
+            ['git', 'diff-index', '--name-only', 'HEAD', '--']).strip()
+    if local_changes:
+        raise RuntimeError('Local changes found!')
+    subprocess.check_output(['git', 'fetch'])
+    changes_vs_master = subprocess.check_output(
+            ['git', 'diff', '--name-only', 'HEAD', 'origin/master']).strip()
+    if changes_vs_master:
+        raise RuntimeError("Local changes not pushed to origin/master")
+
+    tags_str = subprocess.check_output(['git', 'tag']).decode('utf-8')
+    tags = [tag.strip() for tag in tags_str.split("\n") if tag.strip()]
+    max_version = None
+    for tag in tags:
+        if tag.startswith('v'):
+            version = tag[1:]
+            if max_version is None or semver.compare(version, max_version) > 0:
+                max_version = version
+    if max_version is None:
+        max_version = '0.1.0'
+
+    diff_vs_max_version_tag = subprocess.check_output(
+            ['git', 'diff', '--name-only', 'v%s' % max_version, 'HEAD']).strip()
+    if not diff_vs_max_version_tag:
+        from . import version
+        if version.version == max_version:
+            print("HEAD is already tagged as %s, no need to create a new tag" % max_version)
+            sys.exit(0)
+
+    new_version = semver.bump_patch(max_version)
+    print(new_version)
