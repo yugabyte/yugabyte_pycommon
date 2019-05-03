@@ -38,9 +38,9 @@ tox:
 
 release: tox
 	rm -f dist/*
+	python yugabyte_pycommon/update_version.py
 	python setup.py sdist
 	ls dist/*
-	exit 1
 	pip install --user twine
 	twine upload dist/yugabyte_pycommon*.tar.gz
 
