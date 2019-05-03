@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2019 YugaByte, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -19,6 +21,8 @@ import semver
 ALLOW_LOCAL_CHANGES = False
 
 LICENSE_HEADER = """
+# -*- coding: utf-8 -*-
+#
 # Copyright (c) YugaByte, Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -30,7 +34,7 @@ LICENSE_HEADER = """
 # is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
-"""
+""".lstrip()
 
 
 if __name__ == '__main__':
@@ -57,7 +61,9 @@ if __name__ == '__main__':
 
     diff_vs_max_version_tag = subprocess.check_output(
             ['git', 'diff', '--name-only', 'v%s' % max_version, 'HEAD']).strip().decode('utf-8')
+    version_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version.py')
     if not diff_vs_max_version_tag:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from yugabyte_pycommon import version
         if version.__version__  == max_version:
             print("HEAD is already tagged as %s, no need to create a new tag" % max_version)
@@ -68,9 +74,9 @@ if __name__ == '__main__':
     else:
         print("Found differences between max version from tag %s and HEAD:\n%s" % (
             max_version, diff_vs_max_version_tag))
+    sys.exit(1)
 
     new_version = semver.bump_patch(max_version)
-    version_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version.py')
     with open(version_file_path, 'w') as version_file:
         version_file.write('%s\nversion = "%s"\n' % (LICENSE_HEADER, new_version))
     subprocess.check_call(['git', 'add', version_file_path])
