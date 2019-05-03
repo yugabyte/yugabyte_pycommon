@@ -18,6 +18,20 @@ import semver
 
 ALLOW_LOCAL_CHANGES = False
 
+LICENSE_HEADER = """
+# Copyright (c) YugaByte, Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied.  See the License for the specific language governing permissions and limitations
+# under the License.
+"""
+
 
 if __name__ == '__main__':
     local_changes = subprocess.check_output(
@@ -44,15 +58,15 @@ if __name__ == '__main__':
     diff_vs_max_version_tag = subprocess.check_output(
             ['git', 'diff', '--name-only', 'v%s' % max_version, 'HEAD']).strip()
     if not diff_vs_max_version_tag:
-        from . import version
-        if version.version == max_version:
+        from yugabyte_pycommon import version
+        if version.__version__  == max_version:
             print("HEAD is already tagged as %s, no need to create a new tag" % max_version)
             sys.exit(0)
 
     new_version = semver.bump_patch(max_version)
     version_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version.py')
     with open(version_file_path, 'w') as version_file:
-        version_file.write('version = "%s"\n' % new_version)
+        version_file.write('%s\nversion = "%s"\n' % (LICENSE_HEADER, new_version))
     subprocess.check_call(['git', 'add', version_file_path])
     changes_needed = subprocess.check_output(
             ['git', 'diff', '--name-only', 'HEAD', version_file_path])

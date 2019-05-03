@@ -13,6 +13,8 @@
 # Please keep this Python 2 and 3 compatible.
 # http://python-future.org/compatible_idioms.html
 
+from yugabyte_pycommon.version import __version__  # NOQA
+
 from yugabyte_pycommon.external_calls import *
 from yugabyte_pycommon.logging_util import *
 from yugabyte_pycommon.text_manipulation import *
