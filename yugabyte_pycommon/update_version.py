@@ -56,7 +56,7 @@ if __name__ == '__main__':
         max_version = '0.1.0'
 
     diff_vs_max_version_tag = subprocess.check_output(
-            ['git', 'diff', '--name-only', 'v%s' % max_version, 'HEAD']).strip()
+            ['git', 'diff', '--name-only', 'v%s' % max_version, 'HEAD']).strip().decode('utf-8')
     if not diff_vs_max_version_tag:
         from yugabyte_pycommon import version
         if version.__version__  == max_version:
