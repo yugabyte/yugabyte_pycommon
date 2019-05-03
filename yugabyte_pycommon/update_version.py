@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     new_version = semver.bump_patch(max_version)
     with open(version_file_path, 'w') as version_file:
-        version_file.write('%s\nversion = "%s"\n' % (LICENSE_HEADER, new_version))
+        version_file.write('%s\n__version__ = "%s"\n' % (LICENSE_HEADER, new_version))
     subprocess.check_call(['git', 'add', version_file_path])
     changes_needed = subprocess.check_output(
             ['git', 'diff', '--name-only', 'HEAD', version_file_path])
