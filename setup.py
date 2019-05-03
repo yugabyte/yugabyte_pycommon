@@ -9,7 +9,19 @@
 #  Copyright (c) YugaByte, Inc.
 
 from setuptools import setup, find_packages
-from yugabyte_pycommon import __version__
+import subprocess
+
+
+def get_version():
+    first_commit = subprocess.check_output(['git', 'rev-list', '--max-parents=0', 'HEAD']).strip()
+    assert len(first_commit) == 40
+    num_commits = int(subprocess.check_output(
+            ['git', 'rev-list', '--count', first_commit.decode('utf-8') + '..HEAD']).strip())
+    local_changes = subprocess.check_output(
+            ['git', 'diff-index', '--name-only', 'HEAD', '--']).strip()
+    patch_version = num_commits * 2 + (1 if local_changes else 0)
+    return '1.9.%d' % patch_version
+
 
 tests_require = [
     'mock',
@@ -31,7 +43,7 @@ docs_require = [
 
 setup(
     name='yugabyte_pycommon',
-    version=__version__,
+    version=get_version(),
     description='Common utilities used in YugaByte Database\'s build infrastructure but could '
                 'also be useful for anyone. E.g. convenient utilities for running external '
                 'programs, logging, etc. Please give YugaByte DB a star at '
@@ -55,15 +67,34 @@ setup(
         'Operating System :: OS Independent',
     ],
     packages=find_packages(),
+
+    # If set to True, this tells setuptools to automatically include any data files it finds inside
+    # your package directories that are specified by your MANIFEST.in file. For more information,
+    # see the section below on Including Data Files.
     include_package_data=True,
+
+    # A string or list of strings specifying what other distributions need to be installed when this
+    # one is. See the section below on Declaring Dependencies for details and examples of the format
+    # of this argument.
     install_requires=[
         # add your dependencies here
         # remember to use 'package-name>=x.y.z,<x.y+1.0' notation (this way you get bugfixes)
     ],
+
+    # A dictionary mapping names of “extras” (optional features of your project) to strings or lists
+    # of strings specifying what other distributions must be installed to support those features.
+    # See the section below on Declaring Dependencies for details and examples of the format of this
+    # argument.
     extras_require={
         'tests': tests_require,
         'docs': docs_require
     },
+
+    # A dictionary mapping entry point group names to strings or lists of strings defining the entry
+    # points. Entry points are used to support dynamic discovery of services or plugins provided by
+    # a project. See Dynamic Discovery of Services and Plugins for details and examples of the
+    # format of  this argument. In addition, this keyword is used to support Automatic Script
+    # Creation.
     entry_points={
         'console_scripts': [
             # add cli scripts here in this form:

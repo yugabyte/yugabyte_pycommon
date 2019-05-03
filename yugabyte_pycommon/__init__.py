@@ -10,9 +10,6 @@
 # or implied.  See the License for the specific language governing permissions and limitations
 # under the License.
 
-
-from yugabyte_pycommon.version import __version__  # NOQA
-
 # Please keep this Python 2 and 3 compatible.
 # http://python-future.org/compatible_idioms.html
 
