@@ -54,7 +54,8 @@ if __name__ == '__main__':
     with open(version_file_path, 'w') as version_file:
         version_file.write('version = "%s"\n' % new_version)
     subprocess.check_call(['git', 'add', version_file_path])
-    changes_needed = subprocess.check_output(['git', 'diff', '--name-only', version_file_path])
+    changes_needed = subprocess.check_output(
+            ['git', 'diff', '--name-only', 'HEAD', version_file_path])
     if changes_needed:
         subprocess.check_call(
                 ['git', 'commit', version_file_path, '-m', "Updating version to " + new_version])
