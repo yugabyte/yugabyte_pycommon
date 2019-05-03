@@ -39,7 +39,7 @@ docs_require = [
 
 setup(
     name='yugabyte_pycommon',
-    version=yugabyte_pycommon_version.compute_version(),
+    version=version.__version__,
     description='Common utilities used in YugaByte Database\'s build infrastructure but could '
                 'also be useful for anyone. E.g. convenient utilities for running external '
                 'programs, logging, etc. Please give YugaByte DB a star at '
