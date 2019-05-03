@@ -62,6 +62,12 @@ if __name__ == '__main__':
         if version.__version__  == max_version:
             print("HEAD is already tagged as %s, no need to create a new tag" % max_version)
             sys.exit(0)
+        else:
+            print("The version.py file has version %s but the max version from tags is %s" %
+                  (version.__version__, max_version))
+    else:
+        print("Found differences between max version from tag %s and HEAD:\n%s" % (
+            max_version, diff_vs_max_version_tag))
 
     new_version = semver.bump_patch(max_version)
     version_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'version.py')
