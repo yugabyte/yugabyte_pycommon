@@ -74,7 +74,6 @@ if __name__ == '__main__':
     else:
         print("Found differences between max version from tag %s and HEAD:\n%s" % (
             max_version, diff_vs_max_version_tag))
-    sys.exit(1)
 
     new_version = semver.bump_patch(max_version)
     with open(version_file_path, 'w') as version_file:
