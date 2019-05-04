@@ -19,24 +19,22 @@ from yugabyte_pycommon import version
 import subprocess
 
 tests_require = [
-    'mock',
     'nose',
     'coverage',
-    'yanc',
-    'preggy',
-    'tox',
-    'ipdb',
     'coveralls',
-    'sphinx',
     'testfixtures',
-    'semver',
-    'twine',
-    'tox'
+    'tox',
+    'semver'
 ]
 
 docs_require = [
     'sphinx',
     'sphinx_rtd_theme'
+]
+
+release_require = [
+    'semver',
+    'twine',
 ]
 
 setup(
@@ -85,7 +83,8 @@ setup(
     # argument.
     extras_require={
         'tests': tests_require,
-        'docs': docs_require
+        'docs': docs_require,
+        'release': release_require
     },
 
     # A dictionary mapping entry point group names to strings or lists of strings defining the entry
